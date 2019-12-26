@@ -12,7 +12,13 @@ for repo in base.repos.get_matching("*updates"):
     repo.disable()
 base.fill_sack(load_system_repo='auto')
 
+limit = 20 * 1024 * 1024 # 20MB
+human = True
 name = sys.argv[1]
+if name == '-q':
+    human = False
+    name = sys.argv[2]
+
 base.install(name)
 base.resolve()
 
@@ -21,8 +27,7 @@ tot = 0
 for pkg in base.transaction.install_set:
     num += 1
     tot += pkg.downloadsize
-print("Pkgs:", num)
-print("Size:", tot)
+
 
 urls = []
 for pkg in base.transaction.install_set:
@@ -33,4 +38,13 @@ for pkg in base.transaction.install_set:
     if pkg.name == name:
         continue
     urls.append(pkg.location)
+if not human:
+    if tot > limit:
+        sys.exit(1)
+    print('        "%s:%s"' % (name, " ".join(urls)))
+    sys.exit(0)
+
+print("Pkgs:", num)
+print("Size:", tot)
 print("URLs:", " ".join(urls))
+
