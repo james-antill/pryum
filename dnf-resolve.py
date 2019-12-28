@@ -30,11 +30,11 @@ for pkg in base.transaction.install_set:
 
 
 urls = []
-for pkg in base.transaction.install_set:
+for pkg in sorted(base.transaction.install_set):
     if pkg.name != name:
         continue
     urls.append(pkg.location)
-for pkg in base.transaction.install_set:
+for pkg in sorted(base.transaction.install_set):
     if pkg.name == name:
         continue
     urls.append(pkg.location)
