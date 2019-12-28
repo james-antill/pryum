@@ -1,5 +1,6 @@
 #! /bin/bash -e
 
+PKGS28=()
 PKGS29=()
 PKGS30=()
 PKGS31=()
@@ -261,40 +262,33 @@ done
 rundnf=false
 if [ "x$ID" = "xfedora" ]; then
     rundnf=true
-    if [ "x$VERSION_ID" = "x31" ]; then
-        echo "Using Fedora 31"
+    echo "Using Fedora $VERSION_ID"
+    case "x$VERSION_ID"  in
+    "x31")
         PKGS=("${PKGS31[@]}")
-    fi
-    if [ "x$VERSION_ID" = "x30" ]; then
-        echo "Using Fedora 30"
+    ;;
+    "x30")
         PKGS=("${PKGS30[@]}")
-    fi
-    if [ "x$VERSION_ID" = "x29" ]; then
-        echo "Using Fedora 29"
+    ;;
+    "x29")
         PKGS=("${PKGS29[@]}")
-    fi
+    ;;
+    "x28")
+        PKGS=("${PKGS28[@]}")
+    ;;
+    *)
+        echo "Unkown Fedora, using default Fedora 31"
+        rundnf=false
+        VERSION_ID=31
+        PKGS=("${PKGS31[@]}")
+    esac
 else
     VERSION_ID=31
     echo "Using default Fedora 31"
     PKGS=("${PKGS31[@]}")
 fi
 
-cmd="$1"
-if [ "x$1" = "x" ]; then
- cmd=ls
-fi
-
-
-case "$cmd" in
- show-install | show-in | showinstall | showin)
-    rundnf=false
-    cmd=install
- ;;
-esac
-
-case "$cmd" in
- install | in)
-
+function cmdinstall {
 # mhost="$(curl -s --head $fedpkg | fgrep location | | awk '{ print $2 }')"
 mhost="$(curl -s --head $fedpkg | sed -ne 's/location: \(.*\)$/\1/p')"
 off="releases/$VERSION_ID/Everything/x86_64/os"
@@ -304,7 +298,7 @@ off="releases/$VERSION_ID/Everything/x86_64/os"
 for pkg in "${PKGS[@]}" ; do
     NAME=${pkg%%:*}
     URLs=${pkg#*:}
-    if [ "x$2" != "x$NAME" ]; then
+    if [ "x$1" != "x$NAME" ]; then
         continue
     fi
 
@@ -321,18 +315,34 @@ for pkg in "${PKGS[@]}" ; do
         echo "Running dnf locally for $NAME:"
         . $tmpfile
     else
-        echo "Run:"
         cat $tmpfile
     fi
 done
 # echo -e "${PKGS[1]%%:*} => ${PKGS[1]#*:}\n"
- ;;
+}
 
- list | ls)
-
-for pkg in "${PKGS[@]}" ; do
+function cmdlist {
+IFS=$'\n'
+SPKGS=($(sort <<<"${PKGS[*]}"))
+IFS=' '
+for pkg in "${SPKGS[@]}" ; do
     NAME=${pkg%%:*}
     URLs=${pkg#*:}
+
+    # No args. show everything ... some args. show them.
+    if [ "x$1" != "x" ]; then
+        found=false
+        for i in "$@" ; do
+            if [ "x$i" = "x$NAME" ]; then
+                found=true
+                break
+            fi
+        done
+        if ! $found; then
+            continue
+        fi
+    fi
+
     URL=x
     count=0
     for v in $URLs ; do
@@ -343,7 +353,11 @@ for pkg in "${PKGS[@]}" ; do
     done
     if [ "x$count" != "x1" ]; then
     if [ "x$count" != "x2" ]; then
+    if [ "x$count" != "x0" ]; then
         printf "%s => %s (+%d deps)\n" "$NAME" "$URL" $(($count - 1))
+    else
+        printf "%s => Not available.\n" "$NAME"
+    fi
     else
         printf "%s => %s (+%d dep)\n"  "$NAME" "$URL" $(($count - 1))
     fi
@@ -351,6 +365,35 @@ for pkg in "${PKGS[@]}" ; do
         printf "%s => %s\n"            "$NAME" "$URL"
     fi
 done
+}
+
+cmd="$1"
+if [ "x$1" = "x" ]; then
+ cmd=ls
+fi
+
+
+case "$cmd" in
+ show-install | show-in | showinstall | showin)
+    rundnf=false
+    cmd=install
+ ;;
+esac
+
+case "$cmd" in
+ install | in)
+    if ! $dnfrun; then
+        echo "Run:"
+    fi
+    while [ "x$2" != "x" ]; do
+        cmdinstall $2
+        shift
+    done
+ ;;
+
+ list | ls)
+    shift
+    cmdlist $@
   ;;
 
  redeps)
