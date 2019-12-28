@@ -298,7 +298,8 @@ off="releases/$VERSION_ID/Everything/x86_64/os"
 for pkg in "${PKGS[@]}" ; do
     NAME=${pkg%%:*}
     URLs=${pkg#*:}
-    if [ "x$1" != "x$NAME" ]; then
+    BNAME=$(basename $NAME)
+    if [ "x$1" != "x$NAME" -a "x$1" != "x$BNAME" ]; then
         continue
     fi
 
@@ -317,6 +318,8 @@ for pkg in "${PKGS[@]}" ; do
     else
         cat $tmpfile
     fi
+
+    break
 done
 # echo -e "${PKGS[1]%%:*} => ${PKGS[1]#*:}\n"
 }
@@ -328,12 +331,13 @@ IFS=' '
 for pkg in "${SPKGS[@]}" ; do
     NAME=${pkg%%:*}
     URLs=${pkg#*:}
+    BNAME=$(basename $NAME)
 
     # No args. show everything ... some args. show them.
     if [ "x$1" != "x" ]; then
         found=false
         for i in "$@" ; do
-            if [ "x$i" = "x$NAME" ]; then
+            if [ "x$i" = "x$NAME" -o "x$i" = "x$BNAME" ]; then
                 found=true
                 break
             fi
@@ -348,7 +352,7 @@ for pkg in "${SPKGS[@]}" ; do
     for v in $URLs ; do
         count=$(($count + 1))
         if [ "x$count" = "x1" ]; then
-            URL=$v
+            URL=$(basename $v)
         fi
     done
     if [ "x$count" != "x1" ]; then
