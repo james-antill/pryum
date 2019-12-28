@@ -1,9 +1,15 @@
 #! /usr/bin/python3 -t
 
+#  This uses DNF API to resolve a package install on the local system, then
+# output what the new packages would be.
+
 import sys
 
 import dnf
 
+if len(sys.argv) < 2:
+    print('Usage: dnf-resolve pkg-name')
+    sys.exit(1)
 
 base = dnf.Base()
 base.read_all_repos()
@@ -14,6 +20,7 @@ base.fill_sack(load_system_repo='auto')
 
 limit = 20 * 1024 * 1024 # 20MB
 human = True
+
 name = sys.argv[1]
 if name == '-q':
     human = False
