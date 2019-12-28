@@ -96,9 +96,15 @@ if [ "x$1" = "x" ]; then
  cmd=ls
 fi
 
+
 case "$cmd" in
  show-install | show-in | showinstall | showin)
     rundnf=false
+    cmd=install
+ ;;
+esac
+
+case "$cmd" in
  install | in)
 
 # mhost="$(curl -s --head $fedpkg | fgrep location | | awk '{ print $2 }')"
