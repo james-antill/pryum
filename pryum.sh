@@ -1,6 +1,12 @@
 #! /bin/bash -e
 
-PKGS=(
+PKGS29=()
+PKGS30=()
+PKGS31=()
+# BEGIN of included PKGS ----
+# Configuration file for pryum ...
+PKGS31=(
+        # Cowsay!
         "cowsay:Packages/c/cowsay-3.04-13.fc31.noarch.rpm Packages/p/perl-podlators-4.12-2.fc31.noarch.rpm Packages/p/perl-PathTools-3.78-439.fc31.x86_64.rpm Packages/p/perl-URI-1.76-5.fc31.noarch.rpm Packages/p/perl-Term-ANSIColor-4.06-440.fc31.noarch.rpm Packages/p/perl-Term-Cap-1.17-439.fc31.noarch.rpm Packages/p/perl-Text-ParseWords-3.30-439.fc31.noarch.rpm Packages/p/perl-Data-Dumper-2.174-440.fc31.x86_64.rpm Packages/p/perl-Encode-3.01-439.fc31.x86_64.rpm Packages/p/perl-File-Path-2.16-439.fc31.noarch.rpm Packages/p/perl-threads-2.22-439.fc31.x86_64.rpm Packages/p/perl-threads-shared-1.60-440.fc31.x86_64.rpm Packages/p/perl-Storable-3.15-441.fc31.x86_64.rpm Packages/p/perl-Text-Tabs+Wrap-2013.0523-439.fc31.noarch.rpm Packages/p/perl-HTTP-Tiny-0.076-439.fc31.noarch.rpm Packages/p/perl-Unicode-Normalize-1.26-439.fc31.x86_64.rpm Packages/p/perl-Errno-1.30-446.fc31.x86_64.rpm Packages/p/perl-File-Temp-0.230.900-439.fc31.noarch.rpm Packages/p/perl-Carp-1.50-439.fc31.noarch.rpm Packages/p/perl-IO-1.40-446.fc31.x86_64.rpm Packages/p/perl-Exporter-5.73-440.fc31.noarch.rpm Packages/p/perl-MIME-Base64-3.15-439.fc31.x86_64.rpm Packages/p/perl-constant-1.33-440.fc31.noarch.rpm Packages/p/perl-Digest-1.17-439.fc31.noarch.rpm Packages/p/perl-Time-Local-1.280-439.fc31.noarch.rpm Packages/p/perl-Pod-Escapes-1.07-439.fc31.noarch.rpm Packages/p/perl-Digest-MD5-2.55-439.fc31.x86_64.rpm Packages/p/perl-Pod-Perldoc-3.28.01-442.fc31.noarch.rpm Packages/p/perl-Net-SSLeay-1.88-3.fc31.x86_64.rpm Packages/p/perl-Pod-Simple-3.39-2.fc31.noarch.rpm Packages/p/perl-Scalar-List-Utils-1.52-439.fc31.x86_64.rpm Packages/p/perl-IO-Socket-IP-0.39-440.fc31.noarch.rpm Packages/p/perl-interpreter-5.30.0-446.fc31.x86_64.rpm Packages/p/perl-IO-Socket-SSL-2.066-6.fc31.noarch.rpm Packages/g/groff-base-1.22.3-20.fc31.x86_64.rpm Packages/p/perl-Pod-Usage-1.69-439.fc31.noarch.rpm Packages/p/perl-libnet-3.11-440.fc31.noarch.rpm Packages/p/perl-libs-5.30.0-446.fc31.x86_64.rpm Packages/p/perl-macros-5.30.0-446.fc31.x86_64.rpm Packages/p/perl-Getopt-Long-2.51-1.fc31.noarch.rpm Packages/p/perl-Mozilla-CA-20180117-6.fc31.noarch.rpm Packages/p/perl-parent-0.237-439.fc31.noarch.rpm Packages/p/perl-Socket-2.029-4.fc31.x86_64.rpm"
 
         # Utils...
@@ -48,14 +54,42 @@ PKGS=(
 
 )
 
+# END of included PKGS ----
+
 fedpkg="https://download.fedoraproject.org/"
 
-for i in /etc/cyum.conf /cyum.conf; do
+if [ -f /etc/os-release ]; then
+    # freedesktop.org and systemd
+    . /etc/os-release
+fi
+
+for i in /etc/pryum.conf /pryum.conf; do
   if [ -f $i ]; then
     source $i
     break
   fi
 done
+
+rundnf=false
+if [ "x$ID" = "xfedora" ]; then
+    rundnf=true
+    if [ "x$VERSION_ID" = "x31" ]; then
+        echo "Using Fedora 31"
+        PKGS=("${PKGS31[@]}")
+    fi
+    if [ "x$VERSION_ID" = "x30" ]; then
+        echo "Using Fedora 30"
+        PKGS=("${PKGS30[@]}")
+    fi
+    if [ "x$VERSION_ID" = "x29" ]; then
+        echo "Using Fedora 29"
+        PKGS=("${PKGS29[@]}")
+    fi
+else
+    VERSION_ID=31
+    echo "Using default Fedora 31"
+    PKGS=("${PKGS31[@]}")
+fi
 
 cmd="$1"
 if [ "x$1" = "x" ]; then
@@ -63,11 +97,13 @@ if [ "x$1" = "x" ]; then
 fi
 
 case "$cmd" in
+ show-install | show-in | showinstall | showin)
+    rundnf=false
  install | in)
 
 # mhost="$(curl -s --head $fedpkg | fgrep location | | awk '{ print $2 }')"
 mhost="$(curl -s --head $fedpkg | sed -ne 's/location: \(.*\)$/\1/p')"
-off="releases/31/Everything/x86_64/os"
+off="releases/$VERSION_ID/Everything/x86_64/os"
 
 # echo $mhost
 
@@ -77,13 +113,23 @@ for pkg in "${PKGS[@]}" ; do
     if [ "x$2" != "x$NAME" ]; then
         continue
     fi
-    echo "$NAME =>"
-    echo -n "dnf --disablerepo='*' in"
+
+    tmpfile=$(mktemp /tmp/pryum.XXXXXX)
+    trap 'rm -f -- "$tmpfile"' INT TERM HUP EXIT
+
+    echo -n "dnf --disablerepo='*' in" > $tmpfile
     for URL in $URLs ; do
-        echo " \\"
-        echo -n "$mhost$off/$URL"
+        echo " \\" >> $tmpfile
+        echo -n "$mhost$off/$URL" >> $tmpfile
     done
-    echo ''
+    echo '' >> $tmpfile
+    if $rundnf; then
+        echo "Running dnf locally for $NAME:"
+        . $tmpfile
+    else
+        echo "Run:"
+        cat $tmpfile
+    fi
 done
 # echo -e "${PKGS[1]%%:*} => ${PKGS[1]#*:}\n"
  ;;
@@ -92,10 +138,35 @@ done
 
 for pkg in "${PKGS[@]}" ; do
     NAME=${pkg%%:*}
-    URL=${pkg#*:}
-    printf "%s => %s.\n" "$NAME" "$URL"
+    URLs=${pkg#*:}
+    URL=x
+    count=0
+    for v in $URLs ; do
+        count=$(($count + 1))
+        if [ "x$count" = "x1" ]; then
+            URL=$v
+        fi
+    done
+    if [ "x$count" != "x1" ]; then
+    if [ "x$count" != "x2" ]; then
+        printf "%s => %s (+%d deps)\n" "$NAME" "$URL" $(($count - 1))
+    else
+        printf "%s => %s (+%d dep)\n"  "$NAME" "$URL" $(($count - 1))
+    fi
+    else
+        printf "%s => %s\n"            "$NAME" "$URL"
+    fi
 done
   ;;
+
+ redeps)
+    PATH="$PATH:/mnt:."
+for pkg in "${PKGS[@]}" ; do
+    NAME=${pkg%%:*}
+    dnf-resolve.py -q $NAME || true
+done
+  ;;
+
 esac
 
 exit 0
