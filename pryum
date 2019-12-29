@@ -277,7 +277,7 @@ if [ "x$ID" = "xfedora" ]; then
         PKGS=("${PKGS28[@]}")
     ;;
     *)
-        echo "Unkown Fedora, using default Fedora 31"
+        echo "Unknown Fedora, using default Fedora 31"
         rundnf=false
         VERSION_ID=31
         PKGS=("${PKGS31[@]}")
@@ -328,6 +328,7 @@ function cmdlist {
 IFS=$'\n'
 SPKGS=($(sort <<<"${PKGS[*]}"))
 IFS=' '
+maxlen=14
 for pkg in "${SPKGS[@]}" ; do
     NAME=${pkg%%:*}
     URLs=${pkg#*:}
@@ -358,16 +359,107 @@ for pkg in "${SPKGS[@]}" ; do
     if [ "x$count" != "x1" ]; then
     if [ "x$count" != "x2" ]; then
     if [ "x$count" != "x0" ]; then
-        printf "%s => %s (+%d deps)\n" "$NAME" "$URL" $(($count - 1))
+        printf "%*s => %s (+%d deps)\n"  $maxlen "$NAME" "$URL" $(($count - 1))
     else
-        printf "%s => Not available.\n" "$NAME"
+        printf "%*s => Not available.\n" $maxlen "$NAME"
     fi
     else
-        printf "%s => %s (+%d dep)\n"  "$NAME" "$URL" $(($count - 1))
+        printf "%*s => %s (+%d dep)\n"   $maxlen "$NAME" "$URL" $(($count - 1))
     fi
     else
-        printf "%s => %s\n"            "$NAME" "$URL"
+        printf "%*s => %s\n"             $maxlen "$NAME" "$URL"
     fi
+done
+}
+
+function cmdsearch {
+IFS=$'\n'
+SPKGS=($(sort <<<"${PKGS[*]}"))
+IFS=' '
+maxlen=14
+for pkg in "${SPKGS[@]}" ; do
+    NAME=${pkg%%:*}
+    URLs=${pkg#*:}
+    BNAME=$(basename $NAME)
+
+    # No args. show everything ... some args. show them.
+    if [ "x$1" != "x" ]; then
+        found=false
+        for i in "$@" ; do
+            case "$NAME" in
+            *"$i"*)
+                found=true
+                break
+            ;;
+            esac
+        done
+        if ! $found; then
+            continue
+        fi
+    fi
+
+    URL=x
+    count=0
+    for v in $URLs ; do
+        count=$(($count + 1))
+        if [ "x$count" = "x1" ]; then
+            URL=$(basename $v)
+        fi
+    done
+    if [ "x$count" != "x1" ]; then
+    if [ "x$count" != "x2" ]; then
+    if [ "x$count" != "x0" ]; then
+        printf "%*s => %s (+%d deps)\n"  $maxlen "$NAME" "$URL" $(($count - 1))
+    else
+        printf "%*s => Not available.\n" $maxlen "$NAME"
+    fi
+    else
+        printf "%*s => %s (+%d dep)\n"   $maxlen "$NAME" "$URL" $(($count - 1))
+    fi
+    else
+        printf "%*s => %s\n"             $maxlen "$NAME" "$URL"
+    fi
+done
+}
+
+function cmdinfo {
+IFS=$'\n'
+SPKGS=($(sort <<<"${PKGS[*]}"))
+IFS=' '
+for pkg in "${SPKGS[@]}" ; do
+    NAME=${pkg%%:*}
+    URLs=${pkg#*:}
+    BNAME=$(basename $NAME)
+
+    # No args. show everything ... some args. show them.
+    if [ "x$1" != "x" ]; then
+        found=false
+        for i in "$@" ; do
+            if [ "x$i" = "x$NAME" -o "x$i" = "x$BNAME" ]; then
+                found=true
+                break
+            fi
+        done
+        if ! $found; then
+            continue
+        fi
+    fi
+
+    count=0
+    for v in $URLs ; do
+        count=$(($count + 1))
+        if [ "x$count" = "x1" ]; then
+            URL=$(basename $v)
+        fi
+    done
+    echo "Name: $NAME"
+    echo "Pkg(s): $count"
+    count=0
+    for v in $URLs ; do
+        count=$(($count + 1))
+        printf "  %2d. " $count
+        echo $(basename $v)
+    done
 done
 }
 
@@ -398,6 +490,16 @@ case "$cmd" in
  list | ls)
     shift
     cmdlist $@
+  ;;
+
+ info)
+    shift
+    cmdinfo $@
+  ;;
+
+ search | srch | sr)
+    shift
+    cmdsearch $@
   ;;
 
  redeps)
