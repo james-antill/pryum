@@ -4,6 +4,7 @@ PKGS28=()
 PKGS29=()
 PKGS30=()
 PKGS31=()
+PKGS32=()
 # BEGIN of included PKGS ----
 # Configuration file for pryum ...
 PKGS30=(
@@ -286,6 +287,9 @@ if [ "x$ID" = "xfedora" ]; then
     rundnf=true
     echo "Using Fedora $VERSION_ID"
     case "x$VERSION_ID"  in
+    "x32")
+        PKGS=("${PKGS32[@]}")
+    ;;
     "x31")
         PKGS=("${PKGS31[@]}")
     ;;
