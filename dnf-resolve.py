@@ -36,15 +36,29 @@ for pkg in base.transaction.install_set:
     tot += pkg.downloadsize
 
 
+# All packages URLs are from two parts that look like:
+# baseurl (mod/non-mod) ...
+# http://download.fedoraproject.org/pub/fedora/linux/releases/$releasever/Everything/$basearch/os/
+# http://download.fedoraproject.org/pub/fedora/linux/releases/$releasever/Modular/$basearch/os/
+# Packages (mod/non-mod) ...
+# Packages/e/exa-0.9.0-2.module_f31+5365+04413d87.x86_64.rpm
+# Packages/l/libssh2-1.9.0-2.fc31.x86_64.rpm
 urls = []
 for pkg in sorted(base.transaction.install_set):
+    # print("JDBG:", pkg.name, pkg.repo.id)
     if pkg.name != name:
         continue
-    urls.append(pkg.location)
+    loc = pkg.location
+    loc = loc[len("Packages"):]
+    loc = pkg.repo.id + loc
+    urls.append(loc)
 for pkg in sorted(base.transaction.install_set):
     if pkg.name == name:
         continue
-    urls.append(pkg.location)
+    loc = pkg.location
+    loc = loc[len("Packages"):]
+    loc = pkg.repo.id + loc
+    urls.append(loc)
 if not human:
     if tot > limit:
         sys.exit(1)
