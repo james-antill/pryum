@@ -11,9 +11,12 @@ To Download:
 To run:
 
     chmod +x pryum
-    ./pryum.sh in zsh strace iotop
+    ./pryum ls zsh strace iotop exa
+    ./pryum search z
+    ./pryum in zsh strace iotop exa
 
-You can copy any of files from conf/* to /pryum.conf or /etc/pryum.conf but
-the default script comes with the currently support Fedora data (F30 and F31).
+You can copy any of files from conf/* to /pryum.conf or /etc/pryum.conf (or
+combine multiple files) however the script comes with support for the currently
+supported Fedora releases (F30 and F31) by default.
 
 Feel free to open PRs to add packages to the latest conf/pryum*.conf file.
