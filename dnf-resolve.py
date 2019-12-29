@@ -35,7 +35,7 @@ for pkg in base.transaction.install_set:
     num += 1
     tot += pkg.downloadsize
 
-
+compress_map = {'fedora' : 'f', 'fedora-modular' : 'f-m', 'rawhide' : 'r'}
 # All packages URLs are from two parts that look like:
 # baseurl (mod/non-mod) ...
 # http://download.fedoraproject.org/pub/fedora/linux/releases/$releasever/Everything/$basearch/os/
@@ -50,14 +50,14 @@ for pkg in sorted(base.transaction.install_set):
         continue
     loc = pkg.location
     loc = loc[len("Packages"):]
-    loc = pkg.repo.id + loc
+    loc = compress_map.get(pkg.repo.id, pkg.repo.id) + loc
     urls.append(loc)
 for pkg in sorted(base.transaction.install_set):
     if pkg.name == name:
         continue
     loc = pkg.location
     loc = loc[len("Packages"):]
-    loc = pkg.repo.id + loc
+    loc = compress_map.get(pkg.repo.id, pkg.repo.id) + loc
     urls.append(loc)
 if not human:
     if tot > limit:
