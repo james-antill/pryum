@@ -1,5 +1,8 @@
 #! /bin/bash -e
 
+conf_autosource=true
+conf_remoteconf=https://raw.githubusercontent.com/james-antill/pryum/master/conf
+
 PKGS28=()
 PKGS29=()
 PKGS30=()
@@ -270,8 +273,8 @@ PKGS31=(
 
 fedpkg="https://download.fedoraproject.org/"
 
+# Get ID=fedora and VERSION_ID=31 variables.
 if [ -f /etc/os-release ]; then
-    # freedesktop.org and systemd
     . /etc/os-release
 fi
 
@@ -282,25 +285,37 @@ for i in /etc/pryum.conf /pryum.conf; do
   fi
 done
 
+function autosource {
+    if ! $conf_autosource; then
+        return
+    fi
+
+    v="$1"
+    if [ ! -f "pryum$v.conf" ]; then
+        echo "Automatically downloading pryum$v.conf"
+        curl -O $conf_remoteconf/pryum$v.conf
+    fi
+    if [ -f "pryum$v.conf" ]; then
+        echo "Automatically sourcing pryum$v.conf"
+        source "pryum$v.conf"
+    fi
+}
+
 rundnf=false
 if [ "x$ID" = "xfedora" ]; then
     rundnf=true
+    if [ "x${#PKGS[@]}" != "x0" ]; then
+    echo "Using Fedora with pre-configured packages."
+    else
     echo "Using Fedora $VERSION_ID"
     case "x$VERSION_ID"  in
-    "x32")
-        PKGS=("${PKGS32[@]}")
-    ;;
-    "x31")
-        PKGS=("${PKGS31[@]}")
-    ;;
-    "x30")
-        PKGS=("${PKGS30[@]}")
-    ;;
-    "x29")
-        PKGS=("${PKGS29[@]}")
-    ;;
-    "x28")
-        PKGS=("${PKGS28[@]}")
+    "x32" | "x31" | "x30" | "x29" | "x28")
+        n="PKGS$VERSION_ID[@]"
+        a=("${!n}")
+        if [ "x${#a[@]}" = "x0" ]; then
+            autosource $VERSION_ID
+        fi
+        PKGS=("${!n}")
     ;;
     *)
         echo "Unknown Fedora, using default Fedora 31"
@@ -308,6 +323,7 @@ if [ "x$ID" = "xfedora" ]; then
         VERSION_ID=31
         PKGS=("${PKGS31[@]}")
     esac
+    fi
 else
     VERSION_ID=31
     echo "Using default Fedora 31"
