@@ -8,6 +8,7 @@ fi
 master=pryum31.conf
 oconfigs="31 30 29 28 32"
 builtins="conf/pryum30.conf conf/$master"
+builtins="conf/$master"
 
 overwrite=true
 
