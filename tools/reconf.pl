@@ -12,7 +12,14 @@ use warnings;
 
 my %nvals;
 
-die "Format: $0 redeps-output pryum.conf" if @ARGV < 2;
+die "Format: $0 [-u] redeps-output pryum.conf" if @ARGV < 2;
+
+my $conf_update = 0;
+
+if ($ARGV[0] eq "-u") {
+    shift @ARGV;
+    $conf_update = 1;
+}
 
 open(FH, '<', $ARGV[0]) || die $!;
 while (<FH>) {
@@ -26,7 +33,11 @@ open(CONF, '<', $ARGV[1]) || die $!;
 open(NCONF, '>', $ARGV[1] . ".new") || die $!;
 while (<CONF>) {
     if (/"([^:"]+):([^"]*)"$/) {
-        print NCONF "        \"$1:$nvals{$1}\"\n"
+        if (!exists $nvals{$1} && $conf_update) {
+            print NCONF
+        } else {
+            print NCONF "        \"$1:$nvals{$1}\"\n"
+        }
     } else {
         print NCONF
     }
