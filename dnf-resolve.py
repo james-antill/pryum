@@ -18,7 +18,7 @@ for repo in base.repos.get_matching("*updates"):
     repo.disable()
 base.fill_sack(load_system_repo='auto')
 
-limit = 20 * 1024 * 1024 # 20MB
+limit = 30 * 1024 * 1024 # 20MB
 human = True
 
 name = sys.argv[1]
