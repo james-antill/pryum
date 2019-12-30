@@ -2,6 +2,7 @@
 
 conf_autosource=true
 conf_remoteconf=https://raw.githubusercontent.com/james-antill/pryum/master/conf
+conf_verconf=true
 
 PKGS28=()
 PKGS29=()
@@ -238,17 +239,8 @@ PKGS31=(
 
 fedpkg="https://download.fedoraproject.org/"
 
-# Get ID=fedora and VERSION_ID=31 variables.
-if [ -f /etc/os-release ]; then
-    . /etc/os-release
-fi
 
-for i in /etc/pryum.conf /pryum.conf; do
-  if [ -f $i ]; then
-    source $i
-    break
-  fi
-done
+
 
 function autosource {
     if ! $conf_autosource; then
@@ -267,8 +259,8 @@ function autosource {
 }
 
 rundnf=false
+function setuppkgs {
 if [ "x$ID" = "xfedora" ]; then
-    rundnf=true
     if [ "x${#PKGS[@]}" != "x0" ]; then
     echo "Using Fedora $VERSION_ID, with pre-configured packages."
     else
@@ -294,6 +286,7 @@ else
     echo "Using default Fedora 31"
     PKGS=("${PKGS31[@]}")
 fi
+}
 
 function cmdinstall {
 # mhost="$(curl -s --head $fedpkg | fgrep location | | awk '{ print $2 }')"
@@ -486,11 +479,94 @@ for pkg in "${SPKGS[@]}" ; do
 done
 }
 
-cmd="$1"
-if [ "x$1" = "x" ]; then
- cmd=ls
+# Main ...
+
+# Get ID=fedora and VERSION_ID=31 variables.
+if [ -f /etc/os-release ]; then
+    . /etc/os-release
+fi
+# Only "true" fedora can run dnf...
+if [ "x$ID" = "xfedora" ]; then
+    rundnf=true
 fi
 
+for i in /etc/pryum.conf /pryum.conf; do
+  if [ -f $i ]; then
+    source $i
+    break
+  fi
+done
+
+# Parse --conf/--version
+NARGS=()
+while [ "x$1" != "x" ]; do
+case $1 in
+    -v|--version)
+        echo "pryum 1.0"
+        exit 0
+    ;;
+    -h|--help)
+        echo "pryum [options] [sub-command]"
+        echo "      -o X --os-version=X - Set OS version to X (and stop installs)."
+        echo "      -c fname"
+        echo "      --config=fname - Read from config file fname."
+        echo ""
+        echo "      SUB-COMMANDS:"
+        echo ""
+        echo "      list         - list available packages (default)"
+        echo "      info         - show more information for given packages"
+        echo "      search       - search for text in available package names"
+        echo "      install      - install (if possible) given packages"
+        echo "      show-install - show how to install given packages"
+        exit 0
+    ;;
+    -o|--os-version)
+        conf_autosource=false
+        ID=fedora
+        VERSION_ID=$2
+        shift
+        shift
+    ;;
+    -o=*|--os-version=*)
+        conf_autosource=false
+        ID=fedora
+        VERSION_ID="${1#*=}"
+        shift
+    ;;
+    -c|--conf)
+        source $2
+        shift
+        shift
+    ;;
+    -c=*|--conf=*)
+        source "${1#*=}"
+        shift
+    ;;
+    *)
+        NARGS+=("$1")
+        shift
+    ;;
+esac
+done
+set -- "${NARGS[@]}"
+
+# Read version specific config. files...
+if [ "x$VERSION_ID" != "x" ] && $conf_verconf; then
+for i in /etc/pryum$VERSION_ID.conf /pryum$VERSION_ID.conf; do
+  if [ -f $i ]; then
+    source $i
+    break
+  fi
+done
+fi
+
+setuppkgs
+
+cmd="$1"
+if [ "x$1" = "x" ]; then
+ set -- "ls"
+ cmd=ls
+fi
 
 case "$cmd" in
  show-install | show-in | showinstall | showin)
