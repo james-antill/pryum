@@ -305,7 +305,7 @@ rundnf=false
 if [ "x$ID" = "xfedora" ]; then
     rundnf=true
     if [ "x${#PKGS[@]}" != "x0" ]; then
-    echo "Using Fedora with pre-configured packages."
+    echo "Using Fedora $VERSION_ID, with pre-configured packages."
     else
     echo "Using Fedora $VERSION_ID"
     case "x$VERSION_ID"  in
@@ -560,14 +560,35 @@ case "$cmd" in
     cmdsearch $@
   ;;
 
- redeps)
+ redeps | redeps-empty)
     PATH="$PATH:/mnt:."
 for pkg in "${PKGS[@]}" ; do
     NAME=${pkg%%:*}
+    URLs=${pkg#*:}
+    if [ "x$cmd" = "xredeps-empty" -a "x$URLs" != "x" ]; then
+        continue
+    fi
     dnf-resolve.py -q $NAME || true
 done
   ;;
 
+ chk)
+    echo "Checking data."
+    chkstore=""
+for pkg in "${PKGS[@]}" ; do
+    NAME=${pkg%%:*}
+    case $chkstore in
+        *.$NAME.*)
+            echo "Failed check for $NAME."
+        ;;
+    esac
+    chkstore="$chkstore.$NAME."
+done
+  ;;
+
+ *)
+    echo "Bad sub-command: $cmd."
+ ;;
 esac
 
 exit 0
