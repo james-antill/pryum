@@ -20,7 +20,11 @@ To run:
     ./pryum --os-version=30 in zsh strace
 
 You can copy any of files from conf/* to / or /etc/ however the script comes
-with builtin support for the latest supported Fedora release (F31), and will
+with builtin support for the latest supported Fedora release (F32), and will
 automatically download the data for F28+.
 
 Feel free to open PRs to add packages to the latest conf/pryum*.conf file.
+
+To re-generate the metadata run (maybe altering the conf values there):
+
+    ./tools/full-rebuild.sh

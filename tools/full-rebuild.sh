@@ -5,11 +5,20 @@ if [ -x /usr/bin/podman ]; then
     docker="sudo podman"
 fi
 
-master=pryum31.conf
-oconfigs="31 30 29 28 32"
-builtins="conf/pryum30.conf conf/$master"
-builtins="conf/$master"
+master=pryum32.conf
+oconfigs="32 31"
 
+if [ "x$1" = "x-m" ]; then
+    master="$2"
+    shift; shift
+fi
+
+if [ "x$1" = "x-o" ]; then
+    oconfigs="$2"
+    shift; shift
+fi
+
+builtins="conf/$master"
 overwrite=true
 
 for v in $oconfigs; do
