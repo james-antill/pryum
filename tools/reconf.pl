@@ -35,6 +35,8 @@ while (<CONF>) {
     if (/"([^:"]+):([^"]*)"$/) {
         if (!exists $nvals{$1} && $conf_update) {
             print NCONF
+        } elsif (!exists $nvals{$1}) {
+            print NCONF "        \"$1:\"\n"
         } else {
             print NCONF "        \"$1:$nvals{$1}\"\n"
         }

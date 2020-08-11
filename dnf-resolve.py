@@ -26,7 +26,31 @@ if name == '-q':
     human = False
     name = sys.argv[2]
 
-base.install(name)
+def _err(*args):
+    sys.stderr.write(*args)
+_errv = _err
+if not sys.stderr.isatty():
+    def _errv(*args):
+        pass
+
+# https://stackoverflow.com/questions/3154460/python-human-readable-large-numbers
+import math
+millnames = [' B',' KB',' MB',' GB',' TB']
+def shortB(n):
+    n = float(n)
+    millidx = max(0,min(len(millnames)-1,
+                        int(math.floor(0 if n == 0 else math.log10(abs(n))/3))))
+
+    return '{:.0f}{}'.format(n / 10**(3 * millidx), millnames[millidx])
+
+
+try:
+    base.install(name)
+except dnf.exceptions.PackageNotFoundError as e:
+    _err('* Error: ')
+    _err(str(e))
+    _err('\n')
+    sys.exit(1)
 base.resolve()
 
 num = 0
@@ -61,7 +85,9 @@ for pkg in sorted(base.transaction.install_set):
     urls.append(loc)
 if not human:
     if tot > limit:
+        _errv(' Filtered: %s (%d pkg(s), %s)\n' % (name, num, shortB(tot)))
         sys.exit(1)
+    _errv('  Resolved: %s (%d pkg(s), %s)\n' % (name, num, shortB(tot)))
     print('        "%s:%s"' % (name, " ".join(urls)))
     sys.exit(0)
 
